@@ -1,4 +1,4 @@
-module web_module
+module finance-backend
 
 go 1.25.1
 
