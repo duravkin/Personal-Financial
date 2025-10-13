@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -28,14 +29,30 @@ func initDB() {
 		" dbname=" + os.Getenv("DB_NAME") +
 		" port=" + os.Getenv("DB_PORT") +
 		" sslmode=disable TimeZone=UTC"
-	
+
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+	// Пытаемся подключиться несколько раз с задержкой
+	for i := 0; i < 10; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Printf("Failed to connect to database (attempt %d/10): %v", i+1, err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
 	}
 
-	db.AutoMigrate(&Transaction{})
+	if err != nil {
+		log.Fatal("Failed to connect to database after 10 attempts:", err)
+	}
+
+	// Автомиграция
+	err = db.AutoMigrate(&Transaction{})
+	if err != nil {
+		log.Fatal("Failed to auto-migrate:", err)
+	}
+
+	log.Println("Database connected successfully")
 }
 
 func main() {
@@ -48,21 +65,26 @@ func main() {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	})
 
 	// Routes
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	r.GET("/transactions", getTransactions)
 	r.POST("/transactions", createTransaction)
 	r.PUT("/transactions/:id", updateTransaction)
 	r.DELETE("/transactions/:id", deleteTransaction)
 
+	log.Println("Server starting on :8080")
 	r.Run(":8080")
 }
 
