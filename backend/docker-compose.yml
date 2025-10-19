@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    build: .
     ports:
       - "8080:8080"
     environment:
@@ -24,22 +24,6 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - finance-app-network
-
-  frontend:
-    build: 
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8080
-    depends_on:
-      - backend
-    networks:
-      - finance-app-network
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
 
 networks:
   finance-app-network:
