@@ -8,6 +8,18 @@ function App() {
   const [categories, setCategories] = createSignal([]);
   const [summary, setSummary] = createSignal({});
   const [activeTab, setActiveTab] = createSignal('transactions');
+  const [authMode, setAuthMode] = createSignal('login'); // 'login' или 'register'
+  const [isAuthenticated, setIsAuthenticated] = createSignal(false);
+  const [user, setUser] = createSignal(null);
+  const [loading, setLoading] = createSignal(false);
+
+  // Форма для аутентификации
+  const [authForm, setAuthForm] = createSignal({
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: ''
+  });
 
   // Форма для транзакций
   const [transactionForm, setTransactionForm] = createSignal({
@@ -25,34 +37,162 @@ function App() {
     color: '#6B7280'
   });
 
+  // Создаем экземпляр axios с интерцептором для добавления токена
+  const api = axios.create({
+    baseURL: API_URL
+  });
+
+  // Добавляем интерцептор для автоматической подстановки токена
+  api.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Проверяем авторизацию при загрузке приложения
+  createEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      checkAuth();
+    }
+  });
+
+  // Функция проверки авторизации
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      // Декодируем токен чтобы получить ID пользователя (базовый вариант)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      setUser({ id: payload.user_id, email: payload.email });
+      setIsAuthenticated(true);
+
+      // Загружаем данные пользователя
+      fetchUserData();
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      logout();
+    }
+  };
+
+  // Загрузка данных пользователя
+  const fetchUserData = async () => {
+    try {
+      await Promise.all([
+        fetchTransactions(),
+        fetchCategories(),
+        fetchSummary()
+      ]);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  // Регистрация
+  const register = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
+        email: authForm().email,
+        password: authForm().password,
+        first_name: authForm().first_name,
+        last_name: authForm().last_name
+      });
+
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      setIsAuthenticated(true);
+      setAuthForm({ email: '', password: '', first_name: '', last_name: '' });
+      fetchUserData();
+      window.location.reload();
+    } catch (error) {
+      console.error('Registration failed:', error);
+      alert(error.response?.data?.error || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Логин
+  const login = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
+        email: authForm().email,
+        password: authForm().password
+      });
+
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      setUser(user);
+      setIsAuthenticated(true);
+      setAuthForm({ email: '', password: '', first_name: '', last_name: '' });
+      fetchUserData();
+      window.location.reload();
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert(error.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Выход
+  const logout = () => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setUser(null);
+    setTransactions([]);
+    setCategories([]);
+    setSummary({});
+    window.location.reload();
+  };
+
   // Загрузка данных
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/transactions`);
-      console.log('Transactions:', response.data);
+      const response = await api.get('/api/transactions');
       setTransactions(response.data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/categories`);
-      console.log('Categories:', response.data);
+      const response = await api.get('/api/categories');
       setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
   const fetchSummary = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/transactions/summary`);
-      console.log('Summary:', response.data);
+      const response = await api.get('/api/transactions/summary');
       setSummary(response.data);
     } catch (error) {
       console.error('Error fetching summary:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
@@ -63,20 +203,15 @@ function App() {
       const dateFromForm = transactionForm().date;
       const dateISO = new Date(dateFromForm + 'T00:00:00Z').toISOString();
 
-      const formData = {
+      await api.post('/api/transactions', {
         amount: parseFloat(transactionForm().amount),
         type: transactionForm().type,
         description: transactionForm().description,
         date: dateISO,
-        user_id: 1,
         category_id: transactionForm().category_id ?
           parseInt(transactionForm().category_id) :
           null
-      };
-
-      console.log('Sending transaction data:', formData);
-
-      await axios.post(`${API_URL}/api/transactions`, formData);
+      });
 
       setTransactionForm({
         amount: '',
@@ -90,19 +225,22 @@ function App() {
       fetchSummary();
     } catch (error) {
       console.error('Error creating transaction:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
+      if (error.response?.status === 401) {
+        logout();
       }
     }
   };
 
   const deleteTransaction = async (id) => {
     try {
-      await axios.delete(`${API_URL}/api/transactions/${id}`);
+      await api.delete(`/api/transactions/${id}`);
       fetchTransactions();
       fetchSummary();
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
@@ -110,10 +248,7 @@ function App() {
   const createCategory = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/api/categories`, {
-        ...categoryForm(),
-        user_id: 1
-      });
+      await api.post('/api/categories', categoryForm());
       setCategoryForm({
         name: '',
         type: 'expense',
@@ -122,40 +257,35 @@ function App() {
       fetchCategories();
     } catch (error) {
       console.error('Error creating category:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
   const deleteCategory = async (id) => {
     try {
-      await axios.delete(`${API_URL}/api/categories/${id}`);
+      await api.delete(`/api/categories/${id}`);
       fetchCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 
-  // Загрузка всех данных при монтировании
-  createEffect(() => {
-    fetchTransactions();
-    fetchCategories();
-    fetchSummary();
-  });
-
   // Функция для получения названия категории по ID
   const getCategoryName = (transaction) => {
-
-
-    return transaction.category_name;
+    return transaction.category_name || 'Неизвестная категория';
   };
 
   // Функция для получения цвета категории по ID
   const getCategoryColor = (transaction) => {
-    // Если категория вложена в объект транзакции
     if (transaction.Category) {
       return transaction.Category.Color || transaction.Category.color || '#6B7280';
     }
 
-    // Иначе ищем по ID в списке категорий
     const categoryId = transaction.CategoryID || transaction.category_id;
     if (!categoryId) return '#6B7280';
 
@@ -173,9 +303,188 @@ function App() {
     return typeof value === 'number' ? value.toFixed(2) : parseFloat(value || 0).toFixed(2);
   };
 
+  // Если не авторизован, показываем формы аутентификации
+  if (localStorage.getItem('token') === null) {
+    return (
+      <div style={{
+        padding: '20px',
+        fontFamily: 'Arial, sans-serif',
+        maxWidth: '400px',
+        margin: '50px auto',
+        background: '#f8f9fa',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+      }}>
+        <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>
+          Personal Finance Manager
+        </h1>
+
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <button
+            onClick={() => setAuthMode('login')}
+            style={{
+              padding: '10px 20px',
+              marginRight: '10px',
+              background: authMode() === 'login' ? '#007bff' : '#f8f9fa',
+              color: authMode() === 'login' ? 'white' : 'black',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Вход
+          </button>
+          <button
+            onClick={() => setAuthMode('register')}
+            style={{
+              padding: '10px 20px',
+              background: authMode() === 'register' ? '#007bff' : '#f8f9fa',
+              color: authMode() === 'register' ? 'white' : 'black',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Регистрация
+          </button>
+        </div>
+
+        <form onSubmit={authMode() === 'login' ? login : register}>
+          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '15px' }}>
+            {authMode() === 'register' && (
+              <>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Имя
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Имя"
+                    value={authForm().first_name}
+                    onInput={(e) => setAuthForm({ ...authForm(), first_name: e.target.value })}
+                    required={authMode() === 'register'}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    Фамилия
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Фамилия"
+                    value={authForm().last_name}
+                    onInput={(e) => setAuthForm({ ...authForm(), last_name: e.target.value })}
+                    required={authMode() === 'register'}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Email *
+              </label>
+              <input
+                type="email"
+                placeholder="Email"
+                value={authForm().email}
+                onInput={(e) => setAuthForm({ ...authForm(), email: e.target.value })}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                Пароль *
+              </label>
+              <input
+                type="password"
+                placeholder="Пароль"
+                value={authForm().password}
+                onInput={(e) => setAuthForm({ ...authForm(), password: e.target.value })}
+                required
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading()}
+              style={{
+                padding: '12px',
+                background: loading() ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: loading() ? 'not-allowed' : 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              {loading() ? 'Загрузка...' : (authMode() === 'login' ? 'Войти' : 'Зарегистрироваться')}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Основное приложение (после авторизации)
   return (
     <div style="padding: 20px; font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto;">
-      <h1>Personal Finance Manager</h1>
+      {/* Шапка с информацией о пользователе */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        paddingBottom: '15px',
+        borderBottom: '1px solid #eee'
+      }}>
+        <h1 style={{ margin: 0 }}>Personal Finance Manager</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span>Привет, {user()?.first_name || user()?.email}!</span>
+          <button
+            onClick={logout}
+            style={{
+              padding: '8px 16px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Выйти
+          </button>
+        </div>
+      </div>
 
       {/* Сводка */}
       <div style={{
