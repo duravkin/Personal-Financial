@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -32,6 +33,25 @@ func Run() {
 	err = db.AutoMigrate(&model.User{}, &model.Category{}, &model.Transaction{})
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Создаем тестового пользователя если его нет
+	var user model.User
+	if err := db.First(&user, 1).Error; err != nil {
+		// Хешируем пароль
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+
+		user = model.User{
+			ID:        1,
+			Email:     "test@example.com",
+			Password:  string(hashedPassword),
+			FirstName: "Test",
+			LastName:  "User",
+		}
+		if err := db.Create(&user).Error; err != nil {
+			log.Fatal("Failed to create test user:", err)
+		}
+		log.Println("Created test user with ID: 1")
 	}
 
 	// Инициализация репозиториев
