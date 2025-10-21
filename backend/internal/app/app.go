@@ -1,10 +1,6 @@
 package app
 
 import (
-	"finance-backend/internal/handler"
-	"finance-backend/internal/model"
-	"finance-backend/internal/repository"
-	"finance-backend/internal/service"
 	"log"
 	"os"
 
@@ -12,6 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"finance-backend/internal/handler"
+	"finance-backend/internal/model"
+	"finance-backend/internal/repository"
+	"finance-backend/internal/service"
 )
 
 func Run() {
@@ -24,37 +25,60 @@ func Run() {
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failes connect to database:", err)
+		log.Fatal(err)
 	}
 
-	err = db.AutoMigrate(&model.Product{})
+	// Автомиграция
+	err = db.AutoMigrate(&model.User{}, &model.Category{}, &model.Transaction{})
 	if err != nil {
-		log.Fatal("Failed to auto-migrate:", err)
+		log.Fatal(err)
 	}
-	log.Println("Database connected successfully")
 
-	productRepo := repository.NewProductRepository(db)
+	// Инициализация репозиториев
+	transactionRepo := repository.NewTransactionRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
 
-	productService := service.NewProductService(productRepo)
+	// Инициализация сервисов
+	transactionService := service.NewTransactionService(transactionRepo, categoryRepo)
+	categoryService := service.NewCategoryService(categoryRepo)
 
-	productHandler := handler.NewProductHandler(productService)
+	// Инициализация хендлеров
+	transactionHandler := handler.NewTransactionHandler(transactionService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
 
-	router := gin.Default()
+	// Настройка Gin
+	r := gin.Default()
 
-	router.Use(cors.New(cors.Config{
+	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"}, // порты, где работает фронт
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		AllowCredentials: true,
 	}))
 
-	api_product := router.Group("api/products")
+	// Простое middleware для тестирования (в реальном приложении заменить на JWT)
+	r.Use(func(c *gin.Context) {
+		// Для тестирования устанавливаем userID = 1
+		c.Set("userID", uint(1))
+		c.Next()
+	})
+
+	// Маршруты
+	api := r.Group("/api")
 	{
-		api_product.GET("", productHandler.GetProducts)
-		api_product.POST("", productHandler.CreateProduct)
-		api_product.PUT("/:id", productHandler.UpdateProduct)
-		api_product.DELETE("/:id", productHandler.DeleteProduct)
+		// Транзакции
+		api.POST("/transactions", transactionHandler.CreateTransaction)
+		api.GET("/transactions", transactionHandler.GetTransactions)
+		api.GET("/transactions/summary", transactionHandler.GetSummary)
+		api.DELETE("/transactions/:id", transactionHandler.DeleteTransaction)
+
+		// Категории
+		api.POST("/categories", categoryHandler.CreateCategory)
+		api.GET("/categories", categoryHandler.GetCategories)
+		api.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 	}
 
-	router.Run(":8080")
+	// Запуск сервера
+	log.Println("Server starting on :8080")
+	r.Run(":8080")
 }
