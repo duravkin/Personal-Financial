@@ -349,108 +349,165 @@ function App() {
           </button>
         </div>
 
-        <form onSubmit={authMode() === 'login' ? login : register}>
-          <div style={{ display: 'flex', 'flex-direction': 'column', gap: '15px' }}>
-            {authMode() === 'register' && (
-              <>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Имя
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Имя"
-                    value={authForm().first_name}
-                    onInput={(e) => setAuthForm({ ...authForm(), first_name: e.target.value })}
-                    required={authMode() === 'register'}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ccc',
-                      borderRadius: '4px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                    Фамилия
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Фамилия"
-                    value={authForm().last_name}
-                    onInput={(e) => setAuthForm({ ...authForm(), last_name: e.target.value })}
-                    required={authMode() === 'register'}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      border: '1px solid #ccc',
-                      borderRadius: '4px',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </>
-            )}
+        {authMode() === 'login' ? (
+          <form onSubmit={login}>
+            <div style={{ display: 'flex', 'flex-direction': 'column', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={authForm().email}
+                  onInput={(e) => setAuthForm({ ...authForm(), email: e.target.value })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                Email *
-              </label>
-              <input
-                type="email"
-                placeholder="Email"
-                value={authForm().email}
-                onInput={(e) => setAuthForm({ ...authForm(), email: e.target.value })}
-                required
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Пароль *
+                </label>
+                <input
+                  type="password"
+                  placeholder="Пароль"
+                  value={authForm().password}
+                  onInput={(e) => setAuthForm({ ...authForm(), password: e.target.value })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading()}
                 style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #ccc',
+                  padding: '12px',
+                  background: loading() ? '#6c757d' : '#007bff',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '4px',
-                  boxSizing: 'border-box'
+                  cursor: loading() ? 'not-allowed' : 'pointer',
+                  fontSize: '16px'
                 }}
-              />
+              >
+                {loading() ? 'Загрузка...' : 'Войти'}
+              </button>
             </div>
+          </form>
+        ) : (
+          <form onSubmit={register}>
+            <div style={{ display: 'flex', 'flex-direction': 'column', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Имя *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Имя"
+                  value={authForm().first_name}
+                  onInput={(e) => setAuthForm({ ...authForm(), first_name: e.target.value })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Фамилия
+                </label>
+                <input
+                  type="text"
+                  placeholder="Фамилия"
+                  value={authForm().last_name}
+                  onInput={(e) => setAuthForm({ ...authForm(), last_name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                Пароль *
-              </label>
-              <input
-                type="password"
-                placeholder="Пароль"
-                value={authForm().password}
-                onInput={(e) => setAuthForm({ ...authForm(), password: e.target.value })}
-                required
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={authForm().email}
+                  onInput={(e) => setAuthForm({ ...authForm(), email: e.target.value })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  Пароль *
+                </label>
+                <input
+                  type="password"
+                  placeholder="Пароль"
+                  value={authForm().password}
+                  onInput={(e) => setAuthForm({ ...authForm(), password: e.target.value })}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading()}
                 style={{
-                  width: '100%',
-                  padding: '10px',
-                  border: '1px solid #ccc',
+                  padding: '12px',
+                  background: loading() ? '#6c757d' : '#007bff',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '4px',
-                  boxSizing: 'border-box'
+                  cursor: loading() ? 'not-allowed' : 'pointer',
+                  fontSize: '16px'
                 }}
-              />
+              >
+                {loading() ? 'Загрузка...' : 'Зарегистрироваться'}
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading()}
-              style={{
-                padding: '12px',
-                background: loading() ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: loading() ? 'not-allowed' : 'pointer',
-                fontSize: '16px'
-              }}
-            >
-              {loading() ? 'Загрузка...' : (authMode() === 'login' ? 'Войти' : 'Зарегистрироваться')}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     );
   }
