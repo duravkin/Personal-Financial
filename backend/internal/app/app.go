@@ -6,11 +6,11 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"finance-backend/internal/handler"
+	"finance-backend/internal/middleware"
 	"finance-backend/internal/model"
 	"finance-backend/internal/repository"
 	"finance-backend/internal/service"
@@ -35,34 +35,22 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	// Создаем тестового пользователя если его нет
-	var user model.User
-	if err := db.First(&user, 1).Error; err != nil {
-		// Хешируем пароль
-		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-
-		user = model.User{
-			ID:        1,
-			Email:     "test@example.com",
-			Password:  string(hashedPassword),
-			FirstName: "Test",
-			LastName:  "User",
-		}
-		if err := db.Create(&user).Error; err != nil {
-			log.Fatal("Failed to create test user:", err)
-		}
-		log.Println("Created test user with ID: 1")
-	}
+	// JWT секрет
+	jwtSecret := os.Getenv("JWT_SECRET")
 
 	// Инициализация репозиториев
+	userRepo := repository.NewUserRepository(db)
 	transactionRepo := repository.NewTransactionRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
 
 	// Инициализация сервисов
+	authService := service.NewAuthService(jwtSecret)
+	userService := service.NewUserService(userRepo, authService)
 	transactionService := service.NewTransactionService(transactionRepo, categoryRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 
 	// Инициализация хендлеров
+	authHandler := handler.NewAuthHandler(userService, authService)
 	transactionHandler := handler.NewTransactionHandler(transactionService)
 	categoryHandler := handler.NewCategoryHandler(categoryService)
 
@@ -76,16 +64,17 @@ func Run() {
 		AllowCredentials: true,
 	}))
 
-	// Простое middleware для тестирования (в реальном приложении заменить на JWT)
-	r.Use(func(c *gin.Context) {
-		// Для тестирования устанавливаем userID = 1
-		c.Set("userID", uint(1))
-		c.Next()
-	})
+	// Публичные маршруты (без аутентификации)
+	r.POST("/api/auth/register", authHandler.Register)
+	r.POST("/api/auth/login", authHandler.Login)
 
-	// Маршруты
+	// Защищенные маршруты (требуют JWT токен)
 	api := r.Group("/api")
+	api.Use(middleware.AuthMiddleware(authService))
 	{
+		// Профиль пользователя
+		api.GET("/auth/profile", authHandler.GetProfile)
+
 		// Транзакции
 		api.POST("/transactions", transactionHandler.CreateTransaction)
 		api.GET("/transactions", transactionHandler.GetTransactions)

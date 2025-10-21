@@ -1,13 +1,39 @@
 package middleware
 
-import "github.com/gin-gonic/gin"
+import (
+	"finance-backend/internal/service"
+	"net/http"
+	"strings"
 
-// SimpleAuthMiddleware - упрощенное middleware для тестирования
-// В реальном приложении заменить на JWT аутентификацию
-func SimpleAuthMiddleware() gin.HandlerFunc {
+	"github.com/gin-gonic/gin"
+)
+
+func AuthMiddleware(authService *service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Для тестирования устанавливаем userID = 1
-		c.Set("userID", uint(1))
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header is required"})
+			c.Abort()
+			return
+		}
+
+		// Формат: "Bearer {token}"
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header format must be Bearer {token}"})
+			c.Abort()
+			return
+		}
+
+		token := parts[1]
+		userID, err := authService.ValidateToken(token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", userID)
 		c.Next()
 	}
 }
