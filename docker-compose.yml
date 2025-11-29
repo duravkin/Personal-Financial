@@ -1,46 +1,58 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=${DB_HOST:-postgres}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-mysecretpassword}
-      - DB_NAME=${DB_NAME:-mydatabase}
-      - JWT_SECRET=${JWT_SECRET:-mysecretpasswordjwt}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-mysecretpassword}
+      DB_NAME: ${DB_NAME:-mydatabase}
+      JWT_SECRET: ${JWT_SECRET:-mysecretpasswordjwt}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - finance-app-network
+    restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine
     environment:
-      - POSTGRES_DB=${DB_NAME:-mydatabase}
-      - POSTGRES_USER=${DB_USER:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-mysecretpassword}
+      POSTGRES_DB: ${DB_NAME:-mydatabase}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mysecretpassword}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - finance-app-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8080
+      VITE_API_URL: ${VITE_API_URL:-http://backend:8080}
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     networks:
       - finance-app-network
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    restart: unless-stopped
 
 networks:
   finance-app-network:
