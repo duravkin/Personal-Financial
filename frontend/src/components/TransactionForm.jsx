@@ -14,6 +14,10 @@ export default function TransactionForm() {
 
     const { addTransaction } = transactionStore;
     const { categories } = categoryStore;
+    const categoryList = () => {
+        const cats = categories();
+        return Array.isArray(cats) ? cats : [];
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,7 +25,7 @@ export default function TransactionForm() {
         const transactionData = {
             amount: parseFloat(form().amount),
             type: form().type,
-            description: form().description,
+            description: form().description || (form().type === "income" ? "Доход" : "Расход"),
             date: formatDateForBackend(form().date),
             category_id: form().category_id ? parseInt(form().category_id) : null
         };
@@ -85,9 +89,13 @@ export default function TransactionForm() {
                                 class="form-select"
                             >
                                 <option value="">Без категории</option>
-                                {categories().filter(cat => cat.type === form().type).map(category => (
-                                    <option value={category.id}>{category.name}</option>
-                                ))}
+                                <For each={categoryList().filter(cat => cat.type === form().type)}>
+                                    {(category) => (
+                                        <Show when={category}>
+                                            <option value={category.id}>{category.name}</option>
+                                        </Show>
+                                    )}
+                                </For>
                             </select>
                         </div>
 
@@ -108,7 +116,7 @@ export default function TransactionForm() {
                                 type="text"
                                 value={form().description}
                                 onInput={(e) => handleInput('description', e.target.value)}
-                                required
+                                // required
                                 class="form-input"
                             />
                         </div>

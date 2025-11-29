@@ -42,7 +42,7 @@ export default function TransactionList() {
                                         <div class="transaction-details">
                                             <div class="transaction-description">{transaction.description}</div>
                                             <div class="transaction-meta">
-                                                {transaction.category?.name || 'Без категории'} • {formatDate(transaction.date)}
+                                                {transaction.category_name || 'Без категории'} • {formatDate(transaction.date)}
                                             </div>
                                         </div>
                                     </div>

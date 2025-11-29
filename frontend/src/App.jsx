@@ -3,6 +3,7 @@ import { authStore } from './stores/auth';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Categories from './pages/Categories';
+import TransactionHistory from './pages/TransactionHistory';
 
 function App() {
   const { user, checkAuth } = authStore;
@@ -32,6 +33,12 @@ function App() {
                   Дашборд
                 </button>
                 <button
+                  onClick={() => setCurrentPage('history')}
+                  class={`nav-link ${currentPage() === 'history' ? 'active' : ''}`}
+                >
+                  История операций
+                </button>
+                <button
                   onClick={() => setCurrentPage('categories')}
                   class={`nav-link ${currentPage() === 'categories' ? 'active' : ''}`}
                 >
@@ -56,6 +63,10 @@ function App() {
 
         <Show when={currentPage() === 'dashboard'}>
           <Dashboard />
+        </Show>
+
+        <Show when={currentPage() === 'history'}>
+          <TransactionHistory />
         </Show>
 
         <Show when={currentPage() === 'categories'}>

@@ -10,7 +10,7 @@ export default function Dashboard() {
     const { fetchCategories } = categoryStore;
 
     onMount(() => {
-        fetchTransactions();
+        fetchTransactions(5);
         fetchSummary();
         fetchCategories();
     });

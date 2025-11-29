@@ -19,6 +19,10 @@ export const api = {
         try {
             const response = await fetch(`${API_BASE}${endpoint}`, config);
 
+            if (!response) {
+                throw new Error('No response from server');
+            }
+
             const responseText = await response.text();
 
             if (!response.ok) {
@@ -44,7 +48,7 @@ export const api = {
                     return JSON.parse(responseText);
                 } catch (parseError) {
                     console.error('JSON parse error:', parseError);
-                    throw new Error('Invalid JSON response from server');
+                    return null;
                 }
             }
 
@@ -63,6 +67,13 @@ export const api = {
     post(endpoint, body) {
         return this.request(endpoint, {
             method: 'POST',
+            body,
+        });
+    },
+
+    put(endpoint, body) {
+        return this.request(endpoint, {
+            method: 'PUT',
             body,
         });
     },
