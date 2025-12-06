@@ -50,6 +50,52 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 	c.JSON(http.StatusOK, categories)
 }
 
+// UpdateCategory обновляет категорию
+func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		return
+	}
+
+	var req dto.UpdateCategoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	category, err := h.categoryService.UpdateCategory(userID, uint(id), req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+// GetCategory возвращает одну категорию
+func (h *CategoryHandler) GetCategory(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+		return
+	}
+
+	category, err := h.categoryService.GetCategoryByID(userID, uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
 // DeleteCategory удаляет категорию
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)

@@ -78,12 +78,16 @@ func Run() {
 		// Транзакции
 		api.POST("/transactions", transactionHandler.CreateTransaction)
 		api.GET("/transactions", transactionHandler.GetTransactions)
-		api.GET("/transactions/summary", transactionHandler.GetSummary)
+		api.GET("/transactions/:id", transactionHandler.GetTransaction)
+		api.PUT("/transactions/:id", transactionHandler.UpdateTransaction)
 		api.DELETE("/transactions/:id", transactionHandler.DeleteTransaction)
+		api.GET("/transactions/summary", transactionHandler.GetSummary)
 
 		// Категории
 		api.POST("/categories", categoryHandler.CreateCategory)
 		api.GET("/categories", categoryHandler.GetCategories)
+		api.GET("/categories/:id", categoryHandler.GetCategory)
+		api.PUT("/categories/:id", categoryHandler.UpdateCategory)
 		api.DELETE("/categories/:id", categoryHandler.DeleteCategory)
 	}
 

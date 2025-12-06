@@ -89,6 +89,52 @@ func (h *TransactionHandler) GetSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, summary)
 }
 
+// UpdateTransaction обновляет транзакцию
+func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction ID"})
+		return
+	}
+
+	var req dto.UpdateTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	transaction, err := h.transactionService.UpdateTransaction(userID, uint(id), req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, transaction)
+}
+
+// GetTransaction возвращает одну транзакцию
+func (h *TransactionHandler) GetTransaction(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction ID"})
+		return
+	}
+
+	transaction, err := h.transactionService.GetTransactionByID(userID, uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, transaction)
+}
+
 // DeleteTransaction удаляет транзакцию
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)

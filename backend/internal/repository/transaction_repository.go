@@ -86,8 +86,24 @@ func (r *TransactionRepository) GetFinancialSummary(userID uint, from, to *time.
 }
 
 // Update обновляет транзакцию
-func (r *TransactionRepository) Update(transaction *model.Transaction) error {
-	return r.db.Save(transaction).Error
+func (r *TransactionRepository) Update(userID uint, id uint, updates map[string]interface{}) (*model.Transaction, error) {
+	var transaction model.Transaction
+
+	// Находим транзакцию и проверяем принадлежность пользователю
+	err := r.db.Joins("User").Where("transactions.id = ? AND transactions.user_id = ?", id, userID).First(&transaction).Error
+	if err != nil {
+		return nil, errors.New("transaction not found or access denied")
+	}
+
+	// Обновляем поля
+	err = r.db.Model(&transaction).Updates(updates).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Загружаем обновленную транзакцию с категорией
+	err = r.db.Preload("Category").First(&transaction, id).Error
+	return &transaction, err
 }
 
 // Delete удаляет транзакцию

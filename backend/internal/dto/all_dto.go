@@ -30,3 +30,17 @@ type FinancialSummary struct {
 	TotalExpense float64 `json:"total_expense"`
 	Balance      float64 `json:"balance"`
 }
+
+type UpdateTransactionRequest struct {
+	CategoryID  *uint   `json:"category_id,omitempty"`
+	Amount      float64 `json:"amount,omitempty"`
+	Type        string  `json:"type,omitempty" binding:"omitempty,oneof=income expense"`
+	Description string  `json:"description,omitempty"`
+	Date        string  `json:"date,omitempty"`
+}
+
+type UpdateCategoryRequest struct {
+	Name  string `json:"name,omitempty"`
+	Type  string `json:"type,omitempty" binding:"omitempty,oneof=income expense"`
+	Color string `json:"color,omitempty"`
+}

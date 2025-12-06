@@ -83,6 +83,55 @@ func (s *TransactionService) GetFinancialSummary(userID uint, from, to *time.Tim
 	return s.transactionRepo.GetFinancialSummary(userID, from, to)
 }
 
+// UpdateTransaction обновляет транзакцию
+func (s *TransactionService) UpdateTransaction(userID uint, id uint, req dto.UpdateTransactionRequest) (*model.Transaction, error) {
+	updates := make(map[string]interface{})
+
+	// Подготавливаем поля для обновления
+	if req.Amount > 0 {
+		updates["amount"] = req.Amount
+	}
+
+	if req.Type != "" {
+		updates["type"] = req.Type
+	}
+
+	if req.Description != "" {
+		updates["description"] = req.Description
+	}
+
+	if req.Date != "" {
+		date, err := time.Parse(time.RFC3339, req.Date)
+		if err != nil {
+			return nil, errors.New("invalid date format")
+		}
+		updates["date"] = date
+	}
+
+	// Проверяем категорию, если указана
+	if req.CategoryID != nil {
+		_, err := s.categoryRepo.GetByID(userID, *req.CategoryID)
+		if err != nil {
+			return nil, errors.New("category not found")
+		}
+		updates["category_id"] = *req.CategoryID
+	}
+
+	// Если нет полей для обновления
+	if len(updates) == 0 {
+		return nil, errors.New("no fields to update")
+	}
+
+	updates["updated_at"] = time.Now()
+
+	return s.transactionRepo.Update(userID, id, updates)
+}
+
+// GetTransactionByID возвращает транзакцию по ID
+func (s *TransactionService) GetTransactionByID(userID uint, id uint) (*model.Transaction, error) {
+	return s.transactionRepo.GetByID(userID, id)
+}
+
 // DeleteTransaction удаляет транзакцию
 func (s *TransactionService) DeleteTransaction(userID uint, id uint) error {
 	return s.transactionRepo.Delete(userID, id)

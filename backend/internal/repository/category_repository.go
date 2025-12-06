@@ -38,6 +38,27 @@ func (r *CategoryRepository) GetByID(userID uint, id uint) (*model.Category, err
 	return &category, nil
 }
 
+// Update обновляет категорию
+func (r *CategoryRepository) Update(userID uint, id uint, updates map[string]interface{}) (*model.Category, error) {
+	var category model.Category
+
+	// Находим категорию и проверяем принадлежность пользователю
+	err := r.db.Where("id = ? AND user_id = ?", id, userID).First(&category).Error
+	if err != nil {
+		return nil, errors.New("category not found or access denied")
+	}
+
+	// Обновляем поля
+	err = r.db.Model(&category).Updates(updates).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Загружаем обновленную категорию
+	err = r.db.First(&category, id).Error
+	return &category, err
+}
+
 // Delete удаляет категорию
 func (r *CategoryRepository) Delete(userID uint, id uint) error {
 	result := r.db.Where("user_id = ?", userID).Delete(&model.Category{}, id)
