@@ -16,6 +16,10 @@ export default function TransactionHistory() {
         }
     });
 
+    const handleFilterChange = (filters) => {
+        fetchTransactions(filters);
+    };
+
     return (
         <div class="transaction-history-page">
             <div class="container">
@@ -25,7 +29,7 @@ export default function TransactionHistory() {
                         <p>Просмотр, редактирование и удаление всех транзакций</p>
                     </div>
                     <div class="card-body">
-                        <TransactionHistoryList />
+                        <TransactionHistoryList onFilterChange={handleFilterChange} />
                     </div>
                 </div>
             </div>

@@ -6,10 +6,21 @@ export const createTransactionStore = () => {
     const [summary, setSummary] = createSignal({});
     const [loading, setLoading] = createSignal(false);
 
-    const fetchTransactions = async () => {
+    const fetchTransactions = async (filters = {}) => {
         setLoading(true);
         try {
-            const response = await api.get('/transactions');
+            let url = '/transactions';
+
+            const params = new URLSearchParams();
+            if (filters.from) params.append('from', filters.from);
+            if (filters.to) params.append('to', filters.to);
+
+            const queryString = params.toString();
+            if (queryString) {
+                url += `?${queryString}`;
+            }
+
+            const response = await api.get(url);
             setTransactions(Array.isArray(response) ? response : []);
         } catch (error) {
             console.error('Failed to fetch transactions:', error);
@@ -19,9 +30,20 @@ export const createTransactionStore = () => {
         }
     };
 
-    const fetchSummary = async () => {
+    const fetchSummary = async (filters = {}) => {
         try {
-            const response = await api.get('/transactions/summary');
+            let url = '/transactions/summary';
+
+            const params = new URLSearchParams();
+            if (filters.from) params.append('from', filters.from);
+            if (filters.to) params.append('to', filters.to);
+
+            const queryString = params.toString();
+            if (queryString) {
+                url += `?${queryString}`;
+            }
+
+            const response = await api.get(url);
             setSummary(response || {});
         } catch (error) {
             console.error('Failed to fetch summary:', error);
@@ -31,14 +53,12 @@ export const createTransactionStore = () => {
 
     const addTransaction = async (transactionData) => {
         try {
-            console.log('Adding transaction:', transactionData);
             const response = await api.post('/transactions', transactionData);
             // setTransactions(prev => [response, ...(Array.isArray(prev) ? prev : [])]);
             await fetchTransactions();
             await fetchSummary();
             return { success: true };
         } catch (error) {
-            console.error('Failed to add transaction:', error);
             return { success: false, error: error.message || 'Failed to add transaction' };
         }
     };
@@ -46,9 +66,8 @@ export const createTransactionStore = () => {
     const updateTransaction = async (id, transactionData) => {
         try {
             const response = await api.put(`/transactions/${id}`, transactionData);
-            setTransactions(prev =>
-                (Array.isArray(prev) ? prev : []).map(t => t.id === id ? response : t)
-            );
+            // setTransactions(prev => (Array.isArray(prev) ? prev : []).map(t => t.id === id ? response : t));
+            await fetchTransactions();
             await fetchSummary();
             return { success: true };
         } catch (error) {
@@ -65,7 +84,6 @@ export const createTransactionStore = () => {
             await fetchSummary();
             return { success: true };
         } catch (error) {
-            console.error('Failed to delete transaction:', error);
             return { success: false, error: error.message || 'Failed to delete transaction' };
         }
     };

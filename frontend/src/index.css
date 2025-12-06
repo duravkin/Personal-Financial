@@ -152,8 +152,14 @@ body {
 
 .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+@media (max-width: 480px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 .submit-btn {
@@ -613,4 +619,191 @@ body {
     .btn {
         flex: 1;
     }
+}
+
+/* Filters section */
+.filters-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    border: 1px solid #e0e0e0;
+}
+
+.filters-section h3 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.filter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Responsive filters */
+@media (max-width: 768px) {
+    .filter-form .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filter-actions {
+        flex-direction: column;
+    }
+
+    .filter-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Summary card with filters */
+.summary-with-filters {
+    margin-bottom: 30px;
+}
+
+.summary-filters {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.summary-filters .form-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Additional transaction info */
+.transaction-info-extended {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.transaction-id {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.transaction-date-full {
+    color: #6c757d;
+}
+
+/* Stats info */
+.stats-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Empty filter results */
+.filter-results-info {
+    background: #e7f3ff;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #b3d9ff;
+}
+
+.filter-results-info p {
+    margin: 0;
+    color: #004085;
+}
+
+/* Date picker improvements */
+input[type="date"] {
+    font-family: inherit;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    background: white;
+}
+
+input[type="date"]:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+/* Filter status */
+.filter-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 10px 15px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.filter-status.active {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.filter-status .clear-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.85rem;
+}
+
+/* Loading indicator for filters */
+.filter-loading {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+/* Transaction count */
+.transaction-count {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    margin-left: 10px;
+    vertical-align: middle;
 }
