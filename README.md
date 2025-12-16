@@ -11,3 +11,8 @@ docker compose up --build
 - Golang + Gin
 - Solid.JS
 - PostgreSQL
+
+---
+
+Запущенное приложение выглядит примерно следующим образом:
+<img width="945" height="515" alt="image" src="https://github.com/user-attachments/assets/4e9cfb85-c503-4881-a13a-4924628c08ec" />
